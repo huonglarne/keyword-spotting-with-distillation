@@ -13,7 +13,7 @@ def kd_loss(student_preds, teacher_preds, T):
         F.log_softmax(teacher_preds/T, dim=1),
     ) * T * T
 
-def distillation_loss(student_preds, teacher_preds, labels, alpha, T)
+def distillation_loss(student_preds, teacher_preds, labels, alpha, T):
     student_loss = student_loss(student_preds, labels)
     kd_loss = kd_loss(student_preds, teacher_preds, T)
 

@@ -23,8 +23,14 @@ def get_pretrained_ast(pretrained_mdl_path):
 
 
 def _prepare_dataset_json(basepath: Path, subset: str):
-    with open(basepath / f'{subset}_list.txt', 'r') as f:
-        filelist = f.readlines()
+    if subset == 'all':
+        filelist = []
+        for each in ['train', 'testing', 'validation']:
+            with open(basepath / f'{each}_list.txt', 'r') as f:
+                filelist += f.readlines()
+    else:
+        with open(basepath / f'{subset}_list.txt', 'r') as f:
+            filelist = f.readlines()
 
     wav_list = []
     for file in filelist:
@@ -45,13 +51,33 @@ def _prepare_dataset_json(basepath: Path, subset: str):
 
 class PrecomputeDataset(AudiosetDataset):
     def __init__(self, dataset_path):
-        dataset_json_file = _prepare_dataset_json(dataset_path)
-        super().__init__(self, dataset_json_file, INFERENCE_AUDIO_CONFIG, LABEL_CSV)
+        dataset_json_file = _prepare_dataset_json(dataset_path, 'all')
+        super().__init__(dataset_json_file, INFERENCE_AUDIO_CONFIG, LABEL_CSV)
 
     def __getitem__(self, index):
         fbank, label_indices = super().__getitem__(index)
         filepath = self.data[index]['wav']
         return fbank, label_indices, filepath
+
+
+def precompute_batch(audio_model, audio_input, device):
+    with torch.no_grad():
+        audio_input = audio_input.to(device)
+        audio_output = audio_model(audio_input)
+
+        predictions = audio_output.to('cpu').detach()
+    return predictions
+
+
+def save_precompute(predictions, filepaths, output_dir):
+    for logit, path in zip(predictions, filepaths):
+        path = Path(path)
+        
+        filename = output_dir.joinpath(path.parent.stem)
+        filename.mkdir(parents=True, exist_ok=True)
+
+        filename = filename.joinpath(path.stem + '.pt')
+        torch.save(logit, filename)
 
 
 def precompute_teacher_preds(pretrained_mdl_path, audios_path, output_dir, batch_size=128, num_workers=2):
@@ -60,18 +86,7 @@ def precompute_teacher_preds(pretrained_mdl_path, audios_path, output_dir, batch
     dataset = PrecomputeDataset(audios_path)
     dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
 
-    with torch.no_grad():
-        for audio_input, _, filepaths in dataloader:
-            audio_input = audio_input.to(device)
-            audio_output = audio_model(audio_input)
+    for audio_input, _, filepaths in dataloader:
+        predictions = precompute_batch(audio_model, audio_input, device)
+        save_precompute(predictions, filepaths, output_dir)
 
-            predictions = audio_output.to('cpu').detach()
-
-            for logit, path in zip(predictions, filepaths):
-                path = Path(path)
-                
-                filename = output_dir.joinpath(path.parent.stem)
-                filename.mkdir(parents=True, exist_ok=True)
-
-                filename = filename.joinpath(path.stem + '.pt')
-                torch.save(logit, filename)

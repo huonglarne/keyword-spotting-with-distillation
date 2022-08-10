@@ -1,9 +1,10 @@
 from pathlib import Path
 
+import numpy as np
 from torch.utils.data import DataLoader
 
 from src.datasets import AudioDataset, AudioDistillDataset, _create_train_subset_file, _preprocess_audio_input
-from src.constants import LABEL_LIST, STANDARD_AUDIO_LENGTH
+from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH
 
 def test_create_train_subset_file(audios_path):
     _create_train_subset_file(audios_path, replace_existing=True)
@@ -39,7 +40,7 @@ def test_audio_dataset(audios_path):
     )
 
     for batch in data_loader:
-        assert batch['input'].shape == (batch_size, STANDARD_AUDIO_LENGTH)
+        assert batch['input'].shape == (batch_size, NFFT//2+1, np.ceil(STANDARD_AUDIO_LENGTH/NFFT*2))
         assert batch['label'].shape == (batch_size,)
         break
 
@@ -58,9 +59,7 @@ def test_audio_distill_dataset(audios_path, teacher_preds_path):
     )
 
     for batch in data_loader:
-        assert batch['student_input'].shape == (batch_size, STANDARD_AUDIO_LENGTH)
         assert batch['teacher_preds'].shape == (batch_size, len(LABEL_LIST))
-        assert batch['label'].shape == (batch_size,)
         break
 
 

@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional
 from torch.utils.data import Dataset
 
-from src.constants import LABEL_LIST, STANDARD_AUDIO_LENGTH
+from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH
 
 def _create_train_subset_file(base_path, replace_existing=False):
     train_filepath = base_path / 'train_list.txt'
@@ -44,8 +44,9 @@ def _preprocess_audio_input(filepath: Path) -> torch.Tensor:
     pad = torch.zeros(STANDARD_AUDIO_LENGTH - audio.shape[0])
     audio = torch.cat((audio, pad))
 
-    torchaudio.transforms.Spectrogram(n_fft=1024, normalized=True)
-    return audio
+    transform = torchaudio.transforms.Spectrogram(n_fft=NFFT, normalized=True)
+    spec = transform(audio)
+    return spec
 
 
 class AudioDataset(Dataset):
