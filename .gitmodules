@@ -1,3 +1,6 @@
 [submodule "ast"]
 	path = ast
 	url = https://github.com/YuanGongND/ast
+[submodule "src/ast"]
+	path = src/ast
+	url = https://github.com/YuanGongND/ast
