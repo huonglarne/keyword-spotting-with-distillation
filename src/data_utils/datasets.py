@@ -40,7 +40,7 @@ def create_train_subset_file(base_path, replace_existing=False):
 
 def _load_precompute(filepath: torch.Tensor) -> torch.Tensor:
     teacher_pred = torch.load(filepath)
-    teacher_pred = F.log_softmax(teacher_pred, dim=1)
+    teacher_pred = F.log_softmax(teacher_pred.float())
     return torch.load(filepath)
 
 
@@ -68,7 +68,8 @@ class AudioDataset(SPEECHCOMMANDS):
 
 
     def __getitem__(self, n: int):
-        audio_array, sample_rate, label_str, speaker_id, label = super().__getitem__(n)
+        audio_array, sample_rate, label_str, speaker_id, _ = super().__getitem__(n)
+        label = LABEL_LIST.index(label_str)
 
         if self.preprocess_fn is not None:
             audio_array = self.preprocess_fn(audio_array)

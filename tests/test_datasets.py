@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torchaudio
 
-from src.data.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input
+from src.data_utils.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input
 from src.constants import AUDIOS_PATH, LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, TEACHER_PREDS_PATH
 
 def test_create_train_subset_file():
@@ -25,7 +25,7 @@ def test_create_train_subset_file():
 def test_preprocess_audio_input():
     audios_path = AUDIOS_PATH
     audio_path = audios_path / 'backward/0a2b400e_nohash_0.wav'
-    audio = torchaudio.load(audio_path)
+    audio = torchaudio.load(audio_path)[0]
     preprocessed_audio = _preprocess_audio_input(audio)
     assert preprocessed_audio.shape == (1, STANDARD_AUDIO_LENGTH)
     # assert preprocessed_audio.shape == (1, NFFT//2+1, np.ceil(STANDARD_AUDIO_LENGTH/NFFT*2))
@@ -51,10 +51,8 @@ def test_audio_dataset():
 
 
 def test_audio_distill_dataset():
-    audios_path = AUDIOS_PATH
-    teacher_preds_path = TEACHER_PREDS_PATH
-    subset = 'train'
-    audio_distill_dataset = AudioDistillDataset(audios_path, teacher_preds_path, subset)
+    subset = 'training'
+    audio_distill_dataset = AudioDistillDataset(subset=subset)
 
     batch_size = 3
 
