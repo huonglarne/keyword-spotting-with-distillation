@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from torch.utils.data import DataLoader
 
-from src.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input
+from src.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input, simconv_collate_fn
 from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH
 
 def test_create_train_subset_file(audios_path):
