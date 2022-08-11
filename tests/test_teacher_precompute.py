@@ -2,7 +2,7 @@ from ast import AST
 import os
 from pathlib import Path
 from torch.utils.data import DataLoader
-from src.data.teacher_precompute import PrecomputeDataset, get_pretrained_ast, _prepare_dataset_json, _precompute_batch, precompute_teacher_preds
+from src.data_utils.teacher_precompute import PrecomputeDataset, get_pretrained_ast, _prepare_dataset_json, _precompute_batch, precompute_teacher_preds
 from src.ast.src.dataloader import AudiosetDataset
 from src.constants import AST_MODEL_PATH, INFERENCE_AUDIO_CONFIG, LABEL_CSV, LABEL_LIST
 

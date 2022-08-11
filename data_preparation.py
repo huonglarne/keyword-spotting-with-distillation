@@ -1,10 +1,10 @@
 import os
 
 from torchaudio.datasets import SPEECHCOMMANDS
-from src.data.datasets import create_train_subset_file
+from src.data_utils.datasets import create_train_subset_file
 
 from src.constants import AUDIOS_PATH, DATA_PATH
-from src.data.teacher_precompute import precompute_teacher_preds
+from src.data_utils.teacher_precompute import precompute_teacher_preds
 
 os.environ['TORCH_HOME'] = 'checkpoints'
 
