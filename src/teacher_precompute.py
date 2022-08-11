@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from src.ast.src.models import ASTModel
 from src.ast.src.dataloader import AudiosetDataset
-from src.constants import LABEL_LIST, INFERENCE_AUDIO_CONFIG, LABEL_CSV
+from src.constants import AST_MODEL_PATH, AUDIOS_PATH, LABEL_LIST, INFERENCE_AUDIO_CONFIG, LABEL_CSV, TEACHER_PREDS_PATH
 
 def get_pretrained_ast(pretrained_mdl_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -25,7 +25,7 @@ def get_pretrained_ast(pretrained_mdl_path):
 def _prepare_dataset_json(basepath: Path, subset: str):
     if subset == 'all':
         filelist = []
-        for each in ['train', 'testing', 'validation']:
+        for each in ['training', 'testing', 'validation']:
             with open(basepath / f'{each}_list.txt', 'r') as f:
                 filelist += f.readlines()
     else:
@@ -60,7 +60,7 @@ class PrecomputeDataset(AudiosetDataset):
         return fbank, label_indices, filepath
 
 
-def precompute_batch(audio_model, audio_input, device):
+def _precompute_batch(audio_model, audio_input, device):
     with torch.no_grad():
         audio_input = audio_input.to(device)
         audio_output = audio_model(audio_input)
@@ -69,7 +69,7 @@ def precompute_batch(audio_model, audio_input, device):
     return predictions
 
 
-def save_precompute(predictions, filepaths, output_dir):
+def _save_precompute(predictions, filepaths, output_dir):
     for logit, path in zip(predictions, filepaths):
         path = Path(path)
         
@@ -80,13 +80,13 @@ def save_precompute(predictions, filepaths, output_dir):
         torch.save(logit, filename)
 
 
-def precompute_teacher_preds(pretrained_mdl_path, audios_path, output_dir, batch_size=128, num_workers=2):
+def precompute_teacher_preds(pretrained_mdl_path=AST_MODEL_PATH, audios_path=AUDIOS_PATH, output_dir=TEACHER_PREDS_PATH, batch_size=128, num_workers=2):
     audio_model, device = get_pretrained_ast(pretrained_mdl_path)
 
     dataset = PrecomputeDataset(audios_path)
-    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers)
+    dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=num_workers, pin_memory=True)
 
     for audio_input, _, filepaths in dataloader:
-        predictions = precompute_batch(audio_model, audio_input, device)
-        save_precompute(predictions, filepaths, output_dir)
+        predictions = _precompute_batch(audio_model, audio_input, device)
+        _save_precompute(predictions, filepaths, output_dir)
 

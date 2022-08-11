@@ -1,12 +1,14 @@
+from email.mime import audio
 from pathlib import Path
 
 import numpy as np
 from torch.utils.data import DataLoader
 
 from src.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input, simconv_collate_fn
-from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH
+from src.constants import AUDIOS_PATH, LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, TEACHER_PREDS_PATH
 
-def test_create_train_subset_file(audios_path):
+def test_create_train_subset_file():
+    audios_path = AUDIOS_PATH
     create_train_subset_file(audios_path, replace_existing=True)
 
     train_filepath = audios_path / 'training_list.txt'
@@ -19,7 +21,8 @@ def test_create_train_subset_file(audios_path):
     assert label_list == set(LABEL_LIST)
 
 
-def test_preprocess_audio_input(audios_path):
+def test_preprocess_audio_input():
+    audios_path = AUDIOS_PATH
     audio_path = audios_path / 'backward/0a2b400e_nohash_0.wav'
 
     preprocessed_audio = _preprocess_audio_input(audio_path)
@@ -46,7 +49,9 @@ def test_audio_dataset():
         break
 
 
-def test_audio_distill_dataset(audios_path, teacher_preds_path):
+def test_audio_distill_dataset():
+    audios_path = AUDIOS_PATH
+    teacher_preds_path = TEACHER_PREDS_PATH
     subset = 'train'
     audio_distill_dataset = AudioDistillDataset(audios_path, teacher_preds_path, subset)
 

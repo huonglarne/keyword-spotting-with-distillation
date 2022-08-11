@@ -6,7 +6,6 @@ from torchaudio.datasets import SPEECHCOMMANDS
 import torchaudio
 import torch
 import torch.nn.functional
-from torch.utils.data import Dataset
 
 from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, AUDIOS_PATH, DATA_PATH
 
