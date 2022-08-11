@@ -1,13 +1,17 @@
 from pathlib import Path
+
+import os
+
+from torchaudio.datasets import SPEECHCOMMANDS
 import torchaudio
 import torch
 import torch.nn.functional
 from torch.utils.data import Dataset
 
-from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH
+from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, AUDIOS_PATH, DATA_PATH
 
-def _create_train_subset_file(base_path, replace_existing=False):
-    train_filepath = base_path / 'train_list.txt'
+def create_train_subset_file(base_path, replace_existing=False):
+    train_filepath = base_path / 'training_list.txt'
 
     if not replace_existing and train_filepath.exists():
         return
@@ -39,40 +43,56 @@ def _load_precompute(filepath: Path) -> torch.Tensor:
 
 def _preprocess_audio_input(filepath: Path) -> torch.Tensor:
     audio, _ = torchaudio.load(filepath)
-    audio = audio.squeeze(0)
+    # audio = audio.squeeze(0)
 
-    pad = torch.zeros(STANDARD_AUDIO_LENGTH - audio.shape[0])
-    audio = torch.cat((audio, pad))
+    pad = torch.zeros(1, STANDARD_AUDIO_LENGTH - audio.shape[-1])
+    audio = torch.cat((audio, pad), dim=1)
+    return audio
 
-    transform = torchaudio.transforms.Spectrogram(n_fft=NFFT, normalized=True)
-    spec = transform(audio)
+    # transform = torchaudio.transforms.Spectrogram(n_fft=NFFT, normalized=True)
+    # spec = transform(audio)
     return spec
 
+def pad_sequence(batch):
+    # Make all tensor in a batch the same length by padding with zeros
+    batch = [item.t() for item in batch]
+    batch = torch.nn.utils.rnn.pad_sequence(batch, batch_first=True, padding_value=0.)
+    return batch.permute(0, 2, 1)
 
-class AudioDataset(Dataset):
-    def __init__(self, audios_path: Path, subset: str):
-        if subset == "train":
-            _create_train_subset_file(audios_path)
 
-        with open(audios_path / f'{subset}_list.txt', 'r') as f:
-            self.file_list = f.readlines()
+def label_to_index(word):
+    # Return the position of the word in labels
+    return torch.tensor(LABEL_LIST.index(word))
 
-        self.audio_path_list = [audios_path / sub_path.strip() for sub_path in self.file_list]
 
-        label_list = [filepath.parent.stem for filepath in self.audio_path_list]
-        self.label_list = [LABEL_LIST.index(label) for label in label_list]
+def simconv_collate_fn(batch):
 
-    def __len__(self):
-        return len(self.file_list)
+    # A data tuple has the form:
+    # waveform, sample_rate, label, speaker_id, utterance_number
 
-    def __getitem__(self, idx):
-        input = _preprocess_audio_input(self.audio_path_list[idx])
-        label = self.label_list[idx]
+    tensors, targets = [], []
 
-        return {
-            "input": input,
-            "label": label
-        }
+    # Gather in lists, and encode labels as indices
+    for waveform, _, label, *_ in batch:
+        tensors += [waveform]
+        targets += [label_to_index(label)]
+
+    # Group the list of tensors into a batched tensor
+    tensors = pad_sequence(tensors)
+    targets = torch.stack(targets)
+
+    return tensors, targets
+
+class AudioDataset(SPEECHCOMMANDS):
+    def __init__(self, data_dir: Path = DATA_PATH , subset: str = None):
+        super().__init__(data_dir, download=True)
+
+        def load_list(filename):
+            filepath = os.path.join(self._path, filename)
+            with open(filepath) as fileobj:
+                return [os.path.normpath(os.path.join(self._path, line.strip())) for line in fileobj]
+
+        self._walker = load_list(f"{subset}_list.txt")
 
 
 class AudioDistillDataset(AudioDataset):
@@ -81,14 +101,7 @@ class AudioDistillDataset(AudioDataset):
         self.teacher_preds_path_list = [teacher_preds_path / sub_path.strip().replace('wav', 'pt') for sub_path in self.file_list]
 
     def __getitem__(self, index):
-        audio_dataset_output = super().__getitem__(index)
-        student_input = audio_dataset_output['input']
-        label = audio_dataset_output['label']
-
+        student_input, label = super().__getitem__(index)
+        
         teacher_preds = _load_precompute(self.teacher_preds_path_list[index])
-
-        return {
-            "student_input": student_input,
-            "teacher_preds": teacher_preds,
-            "label": label
-        }
+        return student_input, teacher_preds, label
