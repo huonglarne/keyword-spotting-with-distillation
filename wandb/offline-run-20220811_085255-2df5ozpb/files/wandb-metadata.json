@@ -1,0 +1,24 @@
+{
+    "os": "Linux-4.19.0-19-cloud-amd64-x86_64-with-debian-buster-sid",
+    "python": "3.7.13",
+    "heartbeatAt": "2022-08-11T08:52:55.586003",
+    "startedAt": "2022-08-11T08:52:55.481327",
+    "docker": null,
+    "gpu": "Tesla T4",
+    "gpu_count": 1,
+    "cpu_count": 4,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/workspaces/keyword-spotting-with-distillation/train.py",
+    "codePath": "train.py",
+    "git": {
+        "remote": "https://github.com/huonglarne/keyword-spotting-with-distillation",
+        "commit": "600c99c1721bd4c8e5447e1cfa8ab85176fdd6d0"
+    },
+    "email": "nguyenlanhuong.vietnam@gmail.com",
+    "root": "/workspaces/keyword-spotting-with-distillation",
+    "host": "8bfa8bd00c39",
+    "username": "container",
+    "executable": "/home/container/venv/bin/python"
+}

@@ -1,3 +1,4 @@
+from re import sub
 import torch
 from pytorch_lightning import LightningDataModule
 from pytorch_lightning import LightningDataModule
@@ -19,7 +20,7 @@ class SpeechCommandDataModule(LightningDataModule):
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.dataset_obj("training", self.data_dir),
+            self.dataset_obj(subset="training"),
             batch_size=self.batch_size,
             shuffle=True,
             collate_fn=self.collate_fn,
@@ -29,7 +30,7 @@ class SpeechCommandDataModule(LightningDataModule):
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.dataset_obj("validation", self.data_dir),
+            self.dataset_obj(subset="validation"),
             batch_size=self.batch_size,
             shuffle=False,
             collate_fn=self.collate_fn,
@@ -39,7 +40,7 @@ class SpeechCommandDataModule(LightningDataModule):
 
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.dataset_obj("testing", self.data_dir),
+            self.dataset_obj(subset="testing"),
             batch_size=self.batch_size,
             shuffle=False,
             collate_fn=self.collate_fn,

@@ -7,8 +7,13 @@ LABEL_LIST =  ["backward", "follow", "five", "bed", "zero", "on", "learn", "two"
 ]
 
 BATCH_SIZE = 256
+KEEP_DATASET_IN_RAM = True
+LEARNING_RATE = 1e-2
 
-NUM_WORKERS = 2
+ORIGINAL_SAMPLE_RATE = 16000
+NEW_SAMPLE_RATE = 8000
+
+NUM_WORKERS = 4
 PIN_MEMORY = True
 
 AUDIOS_PATH = Path('data/SpeechCommands/speech_commands_v0.02')

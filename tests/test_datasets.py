@@ -1,12 +1,10 @@
-from email.mime import audio
 from pathlib import Path
 
-import numpy as np
 from torch.utils.data import DataLoader
 import torchaudio
 
 from src.data_utils.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input
-from src.constants import AUDIOS_PATH, LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, TEACHER_PREDS_PATH
+from src.constants import AUDIOS_PATH, LABEL_LIST, STANDARD_AUDIO_LENGTH
 
 def test_create_train_subset_file():
     audios_path = AUDIOS_PATH
@@ -44,7 +42,7 @@ def test_audio_dataset():
         pin_memory=True
     )
 
-    for audio_array, sample_rate, label_str, speaker_id, label in data_loader:
+    for audio_array, label in data_loader:
         assert audio_array.shape[0] == batch_size
         assert label.shape == (batch_size,)
         break

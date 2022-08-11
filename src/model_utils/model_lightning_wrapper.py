@@ -10,11 +10,11 @@ from torch import nn
 
 from argparse import ArgumentParser
 
-import constants
+from src.constants import LEARNING_RATE, NEW_SAMPLE_RATE, ORIGINAL_SAMPLE_RATE
 import torchaudio
 
 class BaseTorchLightlingWrapper(pl.LightningModule):
-    def __init__(self, core_model, learning_rate=constants.LEARNING_RATE):
+    def __init__(self, core_model, learning_rate=LEARNING_RATE):
         super().__init__()
         
         # log hyperparameters
@@ -22,7 +22,7 @@ class BaseTorchLightlingWrapper(pl.LightningModule):
         self.learning_rate = learning_rate
         self.core_model = core_model
         self.accuracy = Accuracy()
-        self.transform = torchaudio.transforms.Resample(orig_freq=constants.ORIGINAL_SAMPLE_RATE, new_freq=constants.NEW_SAMPLE_RATE)
+        self.transform = torchaudio.transforms.Resample(orig_freq=ORIGINAL_SAMPLE_RATE, new_freq=NEW_SAMPLE_RATE)
 
     # will be used during inference
     def forward(self, x):

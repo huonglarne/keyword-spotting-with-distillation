@@ -14,7 +14,7 @@ if __name__ == "__main__":
     wandb_logger = WandbLogger(project="ViT_experiments")
     model = BaseTorchLightlingWrapper(core_model)
 
-    data_module = SpeechCommandDataModule(AudioDataset)
+    data_module = SpeechCommandDataModule(AudioDataset, collate_fn=None)
 
     data_module.setup()
 
