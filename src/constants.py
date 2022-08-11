@@ -6,7 +6,10 @@ LABEL_LIST =  ["backward", "follow", "five", "bed", "zero", "on", "learn", "two"
     "wow", "no", "nine", "off", "three", "left", "marvin", "yes", "up", "sheila", "happy", "bird", "go", "one"
 ]
 
-NFFT = 1024
+BATCH_SIZE = 256
+
+NUM_WORKERS = 2
+PIN_MEMORY = True
 
 AUDIOS_PATH = Path('data/SpeechCommands/speech_commands_v0.02')
 DATA_PATH = Path('data/')
