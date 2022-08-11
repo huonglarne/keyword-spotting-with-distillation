@@ -1,3 +1,5 @@
+from tqdm import tqdm
+
 from src.datasets import AudioDataset, AudioDistillDataset, simconv_collate_fn
 from torch.utils.data import DataLoader
 
@@ -12,8 +14,9 @@ data_loader = DataLoader(
     batch_size=batch_size,
     num_workers=2,
     pin_memory=True,
-    collate_fn=simconv_collate_fn
+    # collate_fn=simconv_collate_fn
 )
 
-for input, label in data_loader:
+for i, each in tqdm(enumerate(data_loader)):
+    print(len(each))
     break

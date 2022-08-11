@@ -1,13 +1,15 @@
+from ast import Tuple
 from pathlib import Path
 
 import os
+from typing import Callable, Optional
 
 from torchaudio.datasets import SPEECHCOMMANDS
 import torchaudio
 import torch
 import torch.nn.functional
 
-from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, AUDIOS_PATH, DATA_PATH
+from src.constants import LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, AUDIOS_PATH, DATA_PATH, TEACHER_PREDS_PATH
 
 def create_train_subset_file(base_path, replace_existing=False):
     train_filepath = base_path / 'training_list.txt'
@@ -36,14 +38,11 @@ def create_train_subset_file(base_path, replace_existing=False):
             f.write(f"{line}\n")
 
 
-def _load_precompute(filepath: Path) -> torch.Tensor:
+def _load_precompute(filepath: torch.Tensor) -> torch.Tensor:
     return torch.load(filepath)
 
 
-def _preprocess_audio_input(filepath: Path) -> torch.Tensor:
-    audio, _ = torchaudio.load(filepath)
-    # audio = audio.squeeze(0)
-
+def _preprocess_audio_input(audio) -> torch.Tensor:
     pad = torch.zeros(1, STANDARD_AUDIO_LENGTH - audio.shape[-1])
     audio = torch.cat((audio, pad), dim=1)
     return audio
@@ -52,55 +51,36 @@ def _preprocess_audio_input(filepath: Path) -> torch.Tensor:
     # spec = transform(audio)
     return spec
 
-def pad_sequence(batch):
-    # Make all tensor in a batch the same length by padding with zeros
-    batch = [item.t() for item in batch]
-    batch = torch.nn.utils.rnn.pad_sequence(batch, batch_first=True, padding_value=0.)
-    return batch.permute(0, 2, 1)
-
-
-def label_to_index(word):
-    # Return the position of the word in labels
-    return torch.tensor(LABEL_LIST.index(word))
-
-
-def simconv_collate_fn(batch):
-
-    # A data tuple has the form:
-    # waveform, sample_rate, label, speaker_id, utterance_number
-
-    tensors, targets = [], []
-
-    # Gather in lists, and encode labels as indices
-    for waveform, _, label, *_ in batch:
-        tensors += [waveform]
-        targets += [label_to_index(label)]
-
-    # Group the list of tensors into a batched tensor
-    tensors = pad_sequence(tensors)
-    targets = torch.stack(targets)
-
-    return tensors, targets
 
 class AudioDataset(SPEECHCOMMANDS):
-    def __init__(self, data_dir: Path = DATA_PATH , subset: str = None):
+    def __init__(self, data_dir: Path = DATA_PATH , subset: str = None, preprocess_fn: Optional[Callable] =_preprocess_audio_input):
         super().__init__(data_dir, download=True)
 
         def load_list(filename):
             filepath = os.path.join(self._path, filename)
             with open(filepath) as fileobj:
-                return [os.path.normpath(os.path.join(self._path, line.strip())) for line in fileobj]
+                return [Path(os.path.join(self._path, line.strip())) for line in fileobj]
 
         self._walker = load_list(f"{subset}_list.txt")
+        self.preprocess_fn = preprocess_fn
+
+
+    def __getitem__(self, n: int):
+        audio_array, sample_rate, label_str, speaker_id, label = super().__getitem__(n)
+
+        if self.preprocess_fn is not None:
+            audio_array = self.preprocess_fn(audio_array)
+
+        return audio_array, sample_rate, label_str, speaker_id, label
 
 
 class AudioDistillDataset(AudioDataset):
-    def __init__(self, audios_path: Path, teacher_preds_path: Path, subset: str):
-        super().__init__(audios_path, subset)
-        self.teacher_preds_path_list = [teacher_preds_path / sub_path.strip().replace('wav', 'pt') for sub_path in self.file_list]
+    def __init__(self, data_path: Path = DATA_PATH, teacher_preds_path: Path = TEACHER_PREDS_PATH, subset: str = None):
+        super().__init__(data_path, subset)
+        self.teacher_preds_path_list = [teacher_preds_path / sub_path.parent.name / sub_path.name.replace('wav', 'pt') for sub_path in self._walker]
 
     def __getitem__(self, index):
-        student_input, label = super().__getitem__(index)
+        student_input, _, _, _, label = super().__getitem__(index)
         
         teacher_preds = _load_precompute(self.teacher_preds_path_list[index])
         return student_input, teacher_preds, label
