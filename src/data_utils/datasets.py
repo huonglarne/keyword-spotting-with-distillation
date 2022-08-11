@@ -56,7 +56,7 @@ def _preprocess_audio_input(audio) -> torch.Tensor:
 
 class AudioDataset(SPEECHCOMMANDS):
     def __init__(self, data_dir: Path = DATA_PATH , subset: str = None, preprocess_fn: Optional[Callable] =_preprocess_audio_input):
-        super().__init__(data_dir, download=True)
+        super().__init__(data_dir, download=True, device='cuda')
 
         def load_list(filename):
             filepath = os.path.join(self._path, filename)
