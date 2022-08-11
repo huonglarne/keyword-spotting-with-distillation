@@ -37,3 +37,4 @@ class SimpleConv(nn.Module):
         x = F.avg_pool1d(x, x.shape[-1])
         x = x.permute(0, 2, 1)
         x = self.fc1(x)
+        return F.log_softmax(x, dim=2).squeeze()

@@ -1,5 +1,4 @@
 from torch import nn
-import torch.nn.functional as F
 
 def _student_loss(student_preds, labels):
     loss = nn.CrossEntropyLoss()
@@ -12,8 +11,8 @@ def _kd_loss(student_preds, teacher_preds, T):
     )
 
     return loss(
-        F.log_softmax((student_preds/T).float(), dim=1),
-        F.log_softmax((teacher_preds/T).float(), dim=1),
+        (student_preds/T).float(),
+        (teacher_preds/T).float(),
     ) * T * T
 
 def distillation_loss(student_preds, teacher_preds, labels, alpha=0.1, T=10):

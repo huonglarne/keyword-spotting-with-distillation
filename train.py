@@ -1,53 +1,32 @@
-from pathlib import Path
-from src.constants import LABEL_LIST
-
-
-from src.loss import distillation_loss
-from tests.conftest import audios_path, teacher_preds_path
-
-from torch.utils.data import DataLoader
+from models.vit_transformer import VisionTransformer
+from models.lightling_wrapper import BaseTorchLightlingWrapper
+from models.simple_conv import SimpleConv
 import torch
-import torchvision
+from datasets.sc_dataset import SpeechCommandDataModule
+import pytorch_lightning as pl
+from pytorch_lightning.loggers import WandbLogger
+from datasets.simple_dataloader import AudioDataset
+from datasets.prebuild_dataset import AudioArrayDataSet
+from models.simple_conv import simconv_collate_fn
 
-from src.datasets import AudioDistillDataset
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from pathlib import Path
 
-audios_path = Path('data/speech_commands_v0.02')
-teacher_preds_path = Path('data/teacher_preds')
+if __name__ == "__main__":
+    core_model = SimpleConv()
 
-criterion = distillation_loss
+    pl.seed_everything(0)
+    wandb_logger = WandbLogger(project="ViT_experiments")
+    model = BaseTorchLightlingWrapper(core_model)
 
-model = torchvision.models.mobilenet_v3_small(num_classes=len(LABEL_LIST))
-model.to(device)
+    data_module = SpeechCommandDataModule(AudioArrayDataSet, simconv_collate_fn)
+    data_module.prepare_data()
+    data_module.setup()
 
-num_epochs = 2
-batch_size = 512
-optimizer = torch.optim.SGD(model.parameters(), lr=1e-6)
+    if torch.cuda.is_available():
+        trainer = pl.Trainer(gpus=1, max_epochs=50, logger=wandb_logger)
+    else:
+        trainer = pl.Trainer(max_epochs=50, logger=wandb_logger)
 
-audio_distill_dataset = AudioDistillDataset(audios_path, teacher_preds_path, 'train')
-train_loader = DataLoader(
-    audio_distill_dataset,
-    batch_size=batch_size,
-    num_workers=1,
-    pin_memory=True
-)
-
-num_epochs = 2
-for epoch in range(num_epochs):
-    for i, (input, teacher_preds, label) in enumerate(train_loader):
-        input = input.repeat(1, 3, 1, 1)
-        input = input.to(device)
-        teacher_preds = teacher_preds.to(device)
-        label = label.to(device)
-
-        student_pred = model(input)
-
-        # Compute and print loss
-        loss = criterion(student_pred, teacher_preds, label)
-        print(f'Epoch: {epoch+1}, Iteration: {i+1}, Loss: {loss.item()}')
-
-        # Zero gradients, perform a backward pass, and update the weights.
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    # train, validate
+    trainer.fit(model, data_module)

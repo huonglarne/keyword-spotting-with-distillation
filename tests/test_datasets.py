@@ -3,8 +3,9 @@ from pathlib import Path
 
 import numpy as np
 from torch.utils.data import DataLoader
+import torchaudio
 
-from src.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input, simconv_collate_fn
+from src.data.datasets import AudioDataset, AudioDistillDataset, create_train_subset_file, _preprocess_audio_input
 from src.constants import AUDIOS_PATH, LABEL_LIST, NFFT, STANDARD_AUDIO_LENGTH, TEACHER_PREDS_PATH
 
 def test_create_train_subset_file():
@@ -24,9 +25,10 @@ def test_create_train_subset_file():
 def test_preprocess_audio_input():
     audios_path = AUDIOS_PATH
     audio_path = audios_path / 'backward/0a2b400e_nohash_0.wav'
-
-    preprocessed_audio = _preprocess_audio_input(audio_path)
-    assert preprocessed_audio.shape == (1, NFFT//2+1, np.ceil(STANDARD_AUDIO_LENGTH/NFFT*2))
+    audio = torchaudio.load(audio_path)
+    preprocessed_audio = _preprocess_audio_input(audio)
+    assert preprocessed_audio.shape == (1, STANDARD_AUDIO_LENGTH)
+    # assert preprocessed_audio.shape == (1, NFFT//2+1, np.ceil(STANDARD_AUDIO_LENGTH/NFFT*2))
 
 
 def test_audio_dataset():
@@ -39,12 +41,11 @@ def test_audio_dataset():
         audio_dataset,
         batch_size=batch_size,
         num_workers=2,
-        pin_memory=True,
-        collate_fn=simconv_collate_fn
+        pin_memory=True
     )
 
-    for input, label in data_loader:
-        assert input.shape[0] == batch_size
+    for audio_array, sample_rate, label_str, speaker_id, label in data_loader:
+        assert audio_array.shape[0] == batch_size
         assert label.shape == (batch_size,)
         break
 

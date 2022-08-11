@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from src.datasets import AudioDataset, AudioDistillDataset, simconv_collate_fn
+from datasets.datasets import AudioDataset, AudioDistillDataset, simconv_collate_fn
 from torch.utils.data import DataLoader
 
 
